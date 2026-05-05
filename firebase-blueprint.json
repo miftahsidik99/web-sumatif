@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Store user profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Exam": {
+      "title": "Sumptive Exam Data",
+      "description": "Store generated exam specifications and papers",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "mapel": { "type": "string" },
+        "kelas": { "type": "string" },
+        "fase": { "type": "string" },
+        "thnPel": { "type": "string" },
+        "sekolah": { "type": "string" },
+        "guru": { "type": "string" },
+        "jenisSumatif": { "type": "string" },
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "elemen": { "type": "string" },
+              "cp": { "type": "string" }
+            }
+          }
+        },
+        "hotsPercent": { "type": "number" },
+        "lotsPercent": { "type": "number" },
+        "totalPg": { "type": "number" },
+        "totalEssay": { "type": "number" },
+        "questions": { "type": "array" },
+        "specTable": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "mapel", "thnPel"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User documents"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Exam documents"
+    }
+  }
+}
