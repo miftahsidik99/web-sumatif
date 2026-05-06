@@ -5,7 +5,6 @@
 
 import { Question, ExamRequest } from "@/src/services/geminiService";
 import { Download, FileText, CheckCircle2, Table as TableIcon, Image as ImageIcon } from "lucide-react";
-import { motion } from "motion/react";
 import { saveAs } from "file-saver";
 import { 
   Document, 
@@ -18,7 +17,7 @@ import {
   WidthType, 
   BorderStyle,
   AlignmentType,
-  HeadingLevel
+  PageBreak
 } from "docx";
 
 interface ExamPreviewProps {
@@ -33,13 +32,36 @@ interface ExamPreviewProps {
 export default function ExamPreview({ data, request }: ExamPreviewProps) {
   
   const exportToWord = async () => {
+    // Definisi gaya format no border
+    const noBorder = {
+      top: { style: BorderStyle.NONE, size: 0, color: "auto" },
+      bottom: { style: BorderStyle.NONE, size: 0, color: "auto" },
+      left: { style: BorderStyle.NONE, size: 0, color: "auto" },
+      right: { style: BorderStyle.NONE, size: 0, color: "auto" },
+    };
+
+    const headerBorder = {
+      bottom: { style: BorderStyle.DOUBLE, size: 12, color: "000000" },
+      top: { style: BorderStyle.NONE, size: 0, color: "auto" },
+      left: { style: BorderStyle.NONE, size: 0, color: "auto" },
+      right: { style: BorderStyle.NONE, size: 0, color: "auto" },
+    };
+
+    // Pisah tipe soal
+    const pgQuestions = data.questions.filter(q => q.type === 'pg');
+    const essayQuestions = data.questions.filter(q => q.type !== 'pg');
+
     const doc = new Document({
       sections: [{
-        properties: {},
+        properties: {
+            page: { margin: { top: 1134, right: 1134, bottom: 1134, left: 1440 } } // 2cm and 2.54cm
+        },
         children: [
-          // Header
+          // ==================== HALAMAN 1: NASKAH SOAL ====================
+          // Kop Surat
           new Paragraph({
             alignment: AlignmentType.CENTER,
+            spacing: { after: 50 },
             children: [
               new TextRun({ text: request.sekolah.toUpperCase(), bold: true, size: 28 }),
             ],
@@ -47,80 +69,136 @@ export default function ExamPreview({ data, request }: ExamPreviewProps) {
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: { after: 200 },
+            border: headerBorder,
             children: [
-              new TextRun({ text: `${request.jenisSumatif} - TAHUN PELAJARAN ${request.thnPel}`, bold: true }),
+              new TextRun({ text: `PENILAIAN SUMATIF ${request.thnPel}`, size: 22 }),
             ],
           }),
 
-          // Info Table
+          // Identitas
+          new Paragraph({ text: "", spacing: { after: 100 } }),
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: noBorder,
             rows: [
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph(`Mata Pelajaran: ${request.mapel}`)] }),
-                  new TableCell({ children: [new Paragraph(`Guru: ${request.guru}`)] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph(`Kelas/Fase: ${request.kelas}/${request.fase}`)] }),
-                  new TableCell({ children: [new Paragraph(`Waktu: 90 Menit`)] }),
-                ],
-              }),
-            ],
-          }),
-          new Paragraph({ text: "", spacing: { after: 200 } }),
-
-          // Kisi-kisi Section
-          new Paragraph({ text: "KISI-KISI SOAL", heading: HeadingLevel.HEADING_1 }),
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "No", bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Elemen", bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Indikator", bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Level", bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Bentuk", bold: true })] })] }),
+                  new TableCell({ borders: noBorder, width: { size: 15, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "Mata Pelajaran", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, width: { size: 2, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ":", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, width: { size: 33, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: request.mapel, size: 22, bold: true })] })] }),
+                  new TableCell({ borders: noBorder, width: { size: 15, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "Nama", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, width: { size: 2, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ":", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, width: { size: 33, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "_______________________", size: 22 })] })] }),
                 ]
               }),
-              ...data.specTable.map(row => new TableRow({
+              new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph(String(row.No || row.id || ''))] }),
-                  new TableCell({ children: [new Paragraph(String(row.Elemen || ''))] }),
-                  new TableCell({ children: [new Paragraph(String(row.Indikator ||row.Indicator || ''))] }),
-                  new TableCell({ children: [new Paragraph(String(row.Level || ''))] }),
-                  new TableCell({ children: [new Paragraph(String(row.Bentuk || ''))] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: "Kelas/Fase", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: ":", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: `${request.kelas} / ${request.fase}`, size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: "No Absen", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: ":", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: "_______________________", size: 22 })] })] }),
+                ]
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: "Waktu", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: ":", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: "90 Menit", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: "Nilai", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: ":", size: 22 })] })] }),
+                  new TableCell({ borders: noBorder, children: [new Paragraph({ children: [new TextRun({ text: "", size: 22 })] })] }),
+                ]
+              }),
+            ]
+          }),
+
+          // Bagian PG
+          ...(pgQuestions.length > 0 ? [
+            new Paragraph({ text: "", spacing: { before: 200 } }),
+            new Paragraph({
+              children: [new TextRun({ text: "I. Berilah tanda silang (x) pada huruf A, B, C, atau D di depan jawaban yang paling benar!", bold: true, size: 22 })],
+              spacing: { before: 200, after: 150 }
+            }),
+            ...pgQuestions.flatMap((q, index) => [
+              new Paragraph({
+                spacing: { before: 100, after: 60 },
+                children: [
+                  new TextRun({ text: `${index + 1}. `, bold: true, size: 22 }),
+                  new TextRun({ text: q.text, size: 22 }),
+                ]
+              }),
+              // Opsi jawaban
+              ...(q.options ? q.options.map((opt, i) => new Paragraph({
+                indent: { left: 400 },
+                spacing: { before: 40, after: 40 },
+                children: [new TextRun({ text: `${String.fromCharCode(65 + i)}. ${opt}`, size: 22 })]
+              })) : [])
+            ])
+          ] : []),
+
+          // Bagian Essay
+          ...(essayQuestions.length > 0 ? [
+            new Paragraph({ text: "", spacing: { before: 300 } }),
+            new Paragraph({
+              children: [new TextRun({ text: "II. Jawablah pertanyaan-pertanyaan di bawah ini dengan benar!", bold: true, size: 22 })],
+              spacing: { before: 300, after: 150 }
+            }),
+            ...essayQuestions.flatMap((q, index) => [
+              new Paragraph({
+                spacing: { before: 100, after: 60 },
+                children: [
+                  new TextRun({ text: `${pgQuestions.length + index + 1}. `, bold: true, size: 22 }),
+                  new TextRun({ text: q.text, size: 22 }),
+                ]
+              }),
+              new Paragraph({ text: "\n", spacing: { after: 700 } }), // Ruang untuk menjawab essay
+            ])
+          ] : []),
+
+          // ==================== HALAMAN 2: KISI-KISI ====================
+          new Paragraph({ children: [new PageBreak()] }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            children: [new TextRun({ text: "KISI-KISI SOAL SUMATIF", bold: true, size: 24 })],
+          }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "No", bold: true, size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Elemen / CP", bold: true, size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Indikator Soal", bold: true, size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Level", bold: true, size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "No Soal", bold: true, size: 20 })] })] }),
+                ]
+              }),
+              ...data.specTable.map((row, idx) => new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(row.No || row.id || idx + 1), size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(row.Elemen || row.CP || ''), size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(row.Indikator || row.Indicator || ''), size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(row.Level || ''), size: 20 })] })] }),
+                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(row.Bentuk || ''), size: 20 })] })] }),
                 ]
               }))
             ]
           }),
 
-          new Paragraph({ text: "", spacing: { before: 400 } }),
-
-          // Questions Section
-          new Paragraph({ text: "NASKAH SOAL", heading: HeadingLevel.HEADING_1 }),
-          ...data.questions.map(q => [
-            new Paragraph({
-              spacing: { before: 200 },
-              children: [
-                new TextRun({ text: `${q.id}. `, bold: true }),
-                new TextRun({ text: q.text }),
-              ]
-            }),
-            ...(q.type === 'pg' && q.options ? q.options.map((opt, i) => new Paragraph({
-              indent: { left: 720 },
-              children: [new TextRun(`${String.fromCharCode(65 + i)}. ${opt}`)]
-            })) : [])
-          ]).flat(),
-
-          new Paragraph({ text: "", spacing: { before: 400 } }),
-
-          // Answer Key
-          new Paragraph({ text: "LEMBAR JAWABAN & KUNCI", heading: HeadingLevel.HEADING_1 }),
-          ...data.answerKey.map(val => new Paragraph({ text: val }))
+          // ==================== HALAMAN 3: KUNCI JAWABAN ====================
+          new Paragraph({ children: [new PageBreak()] }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+            children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 24 })],
+          }),
+          ...data.answerKey.map(val => new Paragraph({ 
+            spacing: { before: 60, after: 60 },
+            children: [new TextRun({ text: val, size: 22 })] 
+          }))
         ],
       }],
     });
